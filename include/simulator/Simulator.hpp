@@ -15,7 +15,7 @@ enum class AlgorithmType{
 class Simulator {
 public:
 
-	void simulate(const std::string& path,int numberOfRuns, int dimension, int fes, function::FunctionEnum functionType, AlgorithmType algoType);
+	void simulate(const std::string& path, int numberOfRuns, int dimensionCount, int fes, function::FunctionEnum functionType, AlgorithmType algoType);
 	~Simulator();
 private:
 	struct Run{
@@ -24,8 +24,9 @@ private:
 	};
 
 	std::ofstream outputFile_;
-	int dimension_;
+	int dimensionCount_;
 	int fes_;
+	int numberOfSteps_;
 	int numberOfRuns_;
 	int actualRun_;
 	std::shared_ptr<function::IFunction> function_;

@@ -4,16 +4,17 @@
 
 #include <iostream>
 #include <random>
+#include <cfloat>
 
 
 
 namespace simulator {
 
-void Simulator::simulate(const std::string &path, int numberOfRuns, int dimension, int fes,
+void Simulator::simulate(const std::string &path, int numberOfRuns, int dimensionCount, int fes,
 						 function::FunctionEnum functionType, AlgorithmType algoType) {
 	function_ = function::FunctionFactory::makeFunction(functionType);
 	fes_ = fes;
-	dimension_ = dimension;
+	dimensionCount_ = dimensionCount;
 	outputFile_.open(path + ".csv");
 	numberOfRuns_ = numberOfRuns;
 	writeHeader();
@@ -42,24 +43,25 @@ void Simulator::simulate(const std::string &path, int numberOfRuns, int dimensio
 }
 
 void Simulator::randomSearch() {
-	structure::Point bestPosition { dimension_ };
-	structure::Point actualPosition(dimension_);
+	structure::Point bestPosition { dimensionCount_ };
+	structure::Point actualPosition(dimensionCount_);
 	double bestFitness, actualFitness;
+	numberOfSteps_ = fes_;
 
 	std::random_device rd;
 	std::mt19937 mt(rd());
 	std::uniform_real_distribution<double> gen(-function_->getBoundary(), function_->getBoundary());
 
-	for(int i = 0; i < dimension_; i++) {
+	for(int i = 0; i < dimensionCount_; i++) {
 		actualPosition[i] = gen(mt);
 	}
 
 	bestPosition = actualPosition;
 	bestFitness = function_->calculateFitness(bestPosition);
 
-	for(int step = 0; step < fes_; step++) {
+	for(int step = 0; step < numberOfSteps_; step++) {
 		///generate new point
-		for(int i = 0; i < dimension_; i++) {
+		for(int i = 0; i < dimensionCount_; i++) {
 			actualPosition[i] = gen(mt);
 		}
 
@@ -79,24 +81,58 @@ void Simulator::randomSearch() {
 
 void Simulator::hillClimbing() {
 	double maxStep = function_->getBoundary()/10; /// max 10 % step allowed
-	structure::Point bestPosition { dimension_ };
-	structure::Point actualPosition(dimension_);
+	structure::Point bestPosition { dimensionCount_ };
+	structure::Point actualPosition(dimensionCount_);
 	double bestFitness, actualFitness;
+	int neighbourhoodSize = 10;
+	numberOfSteps_ = fes_/neighbourhoodSize;
 
 	std::random_device rd;
 	std::mt19937 mt(rd());
-	std::uniform_real_distribution<double> gen(-function_->getBoundary(), function_->getBoundary());
+	std::uniform_real_distribution<double> pointGen(-function_->getBoundary(), function_->getBoundary());
+	std::uniform_real_distribution<double> stepGen(-function_->getBoundary()/10, function_->getBoundary()/10);
 
-	for(int i = 0; i < dimension_; i++) {
-		actualPosition[i] = gen(mt);
+	for(int i = 0; i < dimensionCount_; i++) {
+		actualPosition[i] = pointGen(mt);
 	}
 
 	bestPosition = actualPosition;
 	bestFitness = function_->calculateFitness(bestPosition);
 
 
+	for(int step = 0; step < numberOfSteps_; step++) {
+		//todo check in bounds
+		structure::Point bestNeighbourhoodPosition(dimensionCount_);
+		bestNeighbourhoodPosition = actualPosition;
+		auto bestNeighbourhoodFitness = DBL_MAX;
 
+		for(int neigbour = 0; neigbour < neighbourhoodSize; neigbour++) {
+			structure::Point newNeighbourPosition(dimensionCount_);
+			newNeighbourPosition = actualPosition;
+			for(int dimension = 0; dimension < dimensionCount_; dimension++) {
+				double stepOffset = stepGen(mt);
+				newNeighbourPosition[dimension] +=  stepOffset;
+				///trim if outside of boundary
+				if(newNeighbourPosition[dimension] > function_->getBoundary()){
+					newNeighbourPosition[dimension] = function_->getBoundary();
+				}else if(newNeighbourPosition[dimension] < -function_->getBoundary()){
+					newNeighbourPosition[dimension] = -function_->getBoundary();
+				}
+			}
 
+			double newNeighbourFitness = function_->calculateFitness(newNeighbourPosition);
+			if(newNeighbourFitness < bestNeighbourhoodFitness){
+				bestNeighbourhoodFitness = newNeighbourFitness;
+				bestNeighbourhoodPosition = newNeighbourPosition;
+			}
+		}
+		actualPosition = bestNeighbourhoodPosition;
+		if(bestNeighbourhoodFitness < bestFitness){
+			bestFitness = bestNeighbourhoodFitness;
+			bestPosition = bestNeighbourhoodPosition;
+		}
+		results_.at(actualRun_).costFunctionValues.push_back(bestFitness);
+	}
 }
 
 Simulator::~Simulator() {
@@ -106,7 +142,7 @@ Simulator::~Simulator() {
 }
 
 void Simulator::writeRuns() {
-	for(int i = 0; i < fes_; i++) {
+	for(int i = 0; i < numberOfSteps_; i++) {
 		double average = 0;
 		for(int j = 0; j < numberOfRuns_; j++) {
 			outputFile_ << results_[j].costFunctionValues[i] << ",";

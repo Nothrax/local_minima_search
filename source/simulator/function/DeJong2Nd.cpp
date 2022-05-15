@@ -23,7 +23,7 @@ double DeJong2Nd::calculateFitness(structure::Point point) {
 	double fitness = 0;
 
 	for(int dimension = 0; dimension < point.getDimensionCount() - 1; dimension++) {
-		fitness += 100*(point[dimension + 1] - pow(point[dimension], 2)) + pow((1 - point[dimension]), 2);
+		fitness += 100*pow((point[dimension + 1] - pow(point[dimension], 2)),2) + pow((1 - point[dimension]), 2);
 	}
 
 	return fitness;
