@@ -82,7 +82,6 @@ void Simulator::randomSearch() {
 void Simulator::hillClimbing() {
 	double maxStep = function_->getBoundary()/10; /// max 10 % step allowed
 	structure::Point bestPosition { dimensionCount_ };
-	structure::Point actualPosition(dimensionCount_);
 	double bestFitness, actualFitness;
 	int neighbourhoodSize = 10;
 	numberOfSteps_ = fes_/neighbourhoodSize;
@@ -93,21 +92,19 @@ void Simulator::hillClimbing() {
 	std::uniform_real_distribution<double> stepGen(-function_->getBoundary()/10, function_->getBoundary()/10);
 
 	for(int i = 0; i < dimensionCount_; i++) {
-		actualPosition[i] = pointGen(mt);
+		bestPosition[i] = pointGen(mt);
 	}
 
-	bestPosition = actualPosition;
 	bestFitness = function_->calculateFitness(bestPosition);
 
 
 	for(int step = 0; step < numberOfSteps_; step++) {
 		//todo check in bounds
-		std::vector<structure::Point> betterPositionsInNeighbourhood; ///stochastic hillclimb, we randomly choose better solution
+		std::vector<structure::Point> bestNeighbourhoodPositions({}); /// stochastic hill climb, we chose random better solution
 
 		for(int neigbour = 0; neigbour < neighbourhoodSize; neigbour++) {
 			structure::Point newNeighbourPosition(dimensionCount_);
-			newNeighbourPosition = actualPosition;
-
+			newNeighbourPosition = bestPosition;
 			for(int dimension = 0; dimension < dimensionCount_; dimension++) {
 				double stepOffset = stepGen(mt);
 				newNeighbourPosition[dimension] +=  stepOffset;
@@ -121,14 +118,16 @@ void Simulator::hillClimbing() {
 
 			double newNeighbourFitness = function_->calculateFitness(newNeighbourPosition);
 			if(newNeighbourFitness < bestFitness){
-				betterPositionsInNeighbourhood.push_back(newNeighbourPosition);
+				bestNeighbourhoodPositions.push_back(newNeighbourPosition);
 			}
 		}
-		if(!betterPositionsInNeighbourhood.empty()){
-			std::uniform_int_distribution<int> indexGen(0, betterPositionsInNeighbourhood.size()-1);
+		if(!bestNeighbourhoodPositions.empty()){
+			std::uniform_int_distribution<int> indexGen(0, bestNeighbourhoodPositions.size()-1);
 			auto index = indexGen(mt);
-			bestFitness = function_->calculateFitness(betterPositionsInNeighbourhood.at(index));
-			bestPosition = betterPositionsInNeighbourhood.at(index);
+
+
+			bestFitness = function_->calculateFitness(bestNeighbourhoodPositions.at(index));
+			bestPosition = bestNeighbourhoodPositions.at(index);
 		}
 		results_.at(actualRun_).costFunctionValues.push_back(bestFitness);
 	}

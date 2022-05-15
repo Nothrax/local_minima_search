@@ -31,7 +31,6 @@ int main() {
 		sim.simulate("../output/converg_hill_dejong2_5dim",30, 5,10000,function::FunctionEnum::DEJONG_2, AlgorithmType::HILL_CLIMBING);
 		sim.simulate("../output/converg_hill_dejong2_10dim",30, 10,10000,function::FunctionEnum::DEJONG_2, AlgorithmType::HILL_CLIMBING);
 		sim.simulate("../output/converg_hill_dejong2_20dim",30, 20,10000,function::FunctionEnum::DEJONG_2, AlgorithmType::HILL_CLIMBING);
-
 	}catch(std::exception &e){
 		std::cerr << e.what() << std::endl;
 	}catch(...){
