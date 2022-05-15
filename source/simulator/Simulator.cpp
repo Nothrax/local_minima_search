@@ -102,13 +102,12 @@ void Simulator::hillClimbing() {
 
 	for(int step = 0; step < numberOfSteps_; step++) {
 		//todo check in bounds
-		structure::Point bestNeighbourhoodPosition(dimensionCount_);
-		bestNeighbourhoodPosition = actualPosition;
-		auto bestNeighbourhoodFitness = DBL_MAX;
+		std::vector<structure::Point> betterPositionsInNeighbourhood; ///stochastic hillclimb, we randomly choose better solution
 
 		for(int neigbour = 0; neigbour < neighbourhoodSize; neigbour++) {
 			structure::Point newNeighbourPosition(dimensionCount_);
 			newNeighbourPosition = actualPosition;
+
 			for(int dimension = 0; dimension < dimensionCount_; dimension++) {
 				double stepOffset = stepGen(mt);
 				newNeighbourPosition[dimension] +=  stepOffset;
@@ -121,15 +120,15 @@ void Simulator::hillClimbing() {
 			}
 
 			double newNeighbourFitness = function_->calculateFitness(newNeighbourPosition);
-			if(newNeighbourFitness < bestNeighbourhoodFitness){
-				bestNeighbourhoodFitness = newNeighbourFitness;
-				bestNeighbourhoodPosition = newNeighbourPosition;
+			if(newNeighbourFitness < bestFitness){
+				betterPositionsInNeighbourhood.push_back(newNeighbourPosition);
 			}
 		}
-		actualPosition = bestNeighbourhoodPosition;
-		if(bestNeighbourhoodFitness < bestFitness){
-			bestFitness = bestNeighbourhoodFitness;
-			bestPosition = bestNeighbourhoodPosition;
+		if(!betterPositionsInNeighbourhood.empty()){
+			std::uniform_int_distribution<int> indexGen(0, betterPositionsInNeighbourhood.size()-1);
+			auto index = indexGen(mt);
+			bestFitness = function_->calculateFitness(betterPositionsInNeighbourhood.at(index));
+			bestPosition = betterPositionsInNeighbourhood.at(index);
 		}
 		results_.at(actualRun_).costFunctionValues.push_back(bestFitness);
 	}
